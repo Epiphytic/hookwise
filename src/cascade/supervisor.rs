@@ -348,7 +348,16 @@ impl crate::cascade::CascadeTier for SupervisorTier {
             cwd: String::new(), // Filled by CascadeRunner
         };
 
-        let record = self.backend.evaluate(&request, &self.policy).await?;
+        let record = match self.backend.evaluate(&request, &self.policy).await {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!(
+                    "captain-hook: supervisor unavailable, falling through ({})",
+                    e
+                );
+                return Ok(None);
+            }
+        };
 
         // If supervisor has low confidence, return None to escalate to human
         if record.metadata.confidence < self.policy.confidence.project {

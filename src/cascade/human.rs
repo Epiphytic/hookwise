@@ -52,11 +52,18 @@ pub struct QueueFileState {
 }
 
 /// Returns the path for the file-backed pending queue.
+/// Includes CLAUDE_TEAM_ID in the filename to isolate per-team state
+/// and prevent cross-process interference when multiple teams run concurrently.
 pub fn pending_queue_path() -> PathBuf {
+    let team_suffix = std::env::var("CLAUDE_TEAM_ID")
+        .map(|id| format!("-{}", id))
+        .unwrap_or_default();
+    let filename = format!("captain-hook-pending{}.json", team_suffix);
+
     if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
-        PathBuf::from(runtime_dir).join("captain-hook-pending.json")
+        PathBuf::from(runtime_dir).join(filename)
     } else {
-        PathBuf::from("/tmp/captain-hook-pending.json")
+        PathBuf::from("/tmp").join(filename)
     }
 }
 

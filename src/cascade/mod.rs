@@ -24,6 +24,8 @@ pub struct CascadeInput {
     pub tool_input: serde_json::Value,
     pub sanitized_input: String,
     pub file_path: Option<String>,
+    /// The working directory of the tool call, used to relativize absolute paths.
+    pub cwd: Option<String>,
 }
 
 /// A single tier in the decision cascade.
@@ -61,6 +63,18 @@ impl CascadeRunner {
         tool_name: &str,
         tool_input: &serde_json::Value,
     ) -> Result<DecisionRecord> {
+        self.evaluate_with_cwd(session, tool_name, tool_input, None)
+            .await
+    }
+
+    /// Run the full cascade for a tool call, with an optional cwd for path relativization.
+    pub async fn evaluate_with_cwd(
+        &self,
+        session: &SessionContext,
+        tool_name: &str,
+        tool_input: &serde_json::Value,
+        cwd: Option<&str>,
+    ) -> Result<DecisionRecord> {
         // Sanitize the tool input
         let raw_input = serde_json::to_string(tool_input).unwrap_or_default();
         let sanitized_input = self.sanitizer.sanitize(&raw_input);
@@ -74,6 +88,7 @@ impl CascadeRunner {
             tool_input: tool_input.clone(),
             sanitized_input,
             file_path,
+            cwd: cwd.map(String::from),
         };
 
         // Run tiers in order: path_policy -> exact_cache -> token_jaccard ->

@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use async_trait::async_trait;
 use chrono::Utc;
 
@@ -80,6 +82,21 @@ impl PathPolicyEngine {
         paths
     }
 
+    /// Make an absolute path relative to the cwd, for glob matching.
+    /// If the path is already relative, or cwd is None, returns the path as-is.
+    fn relativize(path: &str, cwd: Option<&str>) -> String {
+        match cwd {
+            Some(cwd) => {
+                let p = Path::new(path);
+                let c = Path::new(cwd);
+                p.strip_prefix(c)
+                    .map(|rel| rel.to_string_lossy().to_string())
+                    .unwrap_or_else(|_| path.to_string())
+            }
+            None => path.to_string(),
+        }
+    }
+
     /// Extract file paths from tool input depending on tool type.
     fn extract_paths(&self, tool_name: &str, input: &CascadeInput) -> Vec<String> {
         match tool_name {
@@ -111,10 +128,16 @@ impl CascadeTier for PathPolicyEngine {
             None => return Ok(None), // No role/policy = no path policy to evaluate
         };
 
-        let paths = self.extract_paths(&input.tool_name, input);
-        if paths.is_empty() {
+        let raw_paths = self.extract_paths(&input.tool_name, input);
+        if raw_paths.is_empty() {
             return Ok(None); // No file paths extracted = fall through
         }
+
+        // Relativize absolute paths against cwd so globs like "src/**" can match.
+        let paths: Vec<String> = raw_paths
+            .iter()
+            .map(|p| Self::relativize(p, input.cwd.as_deref()))
+            .collect();
 
         let is_read_only =
             input.tool_name == "Read" || input.tool_name == "Glob" || input.tool_name == "Grep";

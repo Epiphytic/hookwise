@@ -141,9 +141,20 @@ pub async fn run() -> Result<()> {
     };
 
     // 5. Run cascade
-    let record = runner
-        .evaluate(&session, &input.tool_name, &input.tool_input)
-        .await?;
+    let record = match runner
+        .evaluate_with_cwd(&session, &input.tool_name, &input.tool_input, Some(cwd))
+        .await
+    {
+        Ok(record) => record,
+        Err(e) => {
+            // On cascade error (e.g. human timeout), default to deny
+            // but still write output so callers can parse it.
+            eprintln!("captain-hook: cascade error, defaulting to deny ({})", e);
+            let output = hook_io::HookOutput::new(Decision::Deny);
+            hook_io::write_hook_output(&output)?;
+            std::process::exit(1);
+        }
+    };
 
     // 6. Output result
     let output = hook_io::HookOutput::new(record.decision);

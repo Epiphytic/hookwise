@@ -50,8 +50,13 @@ pub fn read_hook_input() -> Result<HookInput> {
 }
 
 /// Write the hook output to stdout.
+/// Explicitly flushes stdout to ensure data is written before any
+/// subsequent `std::process::exit()` call (which does not flush Rust buffers).
 pub fn write_hook_output(output: &HookOutput) -> Result<()> {
+    use std::io::Write;
     let stdout = std::io::stdout();
-    serde_json::to_writer(stdout.lock(), output)?;
+    let mut handle = stdout.lock();
+    serde_json::to_writer(&mut handle, output)?;
+    handle.flush()?;
     Ok(())
 }
