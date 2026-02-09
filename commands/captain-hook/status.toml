@@ -1,0 +1,6 @@
+prompt = """Use the captain_hook_status tool to display the current session's captain-hook status including:
+- Session ID and registered role
+- Path policy (allowed/denied write paths)
+- Cache statistics (hit rate, entries)
+- Pending decisions in the queue
+- Sensitive paths that always prompt"""

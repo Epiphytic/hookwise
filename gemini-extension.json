@@ -1,0 +1,14 @@
+{
+  "name": "captain-hook",
+  "version": "0.1.1",
+  "description": "Intelligent permission gating for AI coding assistants",
+  "mcpServers": {
+    "captain-hook": {
+      "command": "captain-hook",
+      "args": [
+        "mcp-server"
+      ]
+    }
+  },
+  "contextFileName": "GEMINI.md"
+}

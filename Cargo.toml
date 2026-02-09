@@ -1,9 +1,12 @@
 [package]
 name = "captain-hook"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "Intelligent permission gating for Claude Code"
+description = "Intelligent permission gating for AI coding assistants"
 license = "MIT"
+repository = "https://github.com/Epiphytic/captain-hook"
+keywords = ["claude-code", "gemini-cli", "permission", "hooks", "mcp"]
+categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
@@ -26,6 +29,11 @@ tracing-subscriber = "0.3"
 async-trait = "0.1"
 reqwest = { version = "0.12", features = ["json"] }
 libc = "0.2"
+rmcp = { version = "0.14", features = ["server", "macros", "transport-io"] }
+schemars = "1"
+flate2 = "1"
+tar = "0.4"
+tempfile = "3"
 
 [dev-dependencies]
 tempfile = "3"

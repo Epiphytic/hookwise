@@ -1,0 +1,1 @@
+prompt = """Use the captain_hook_enable tool to re-enable captain-hook permission gating for the current session after it was previously disabled."""

@@ -1,0 +1,5 @@
+prompt = """Use the captain_hook_register tool to switch this session's role to: {{args}}
+
+This will clear the current role's cached decisions and register the new role.
+
+If no role was specified, list the available roles and ask the user to choose one."""

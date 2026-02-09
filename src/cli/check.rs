@@ -11,7 +11,7 @@ use crate::cascade::CascadeRunner;
 use crate::config::{PolicyConfig, SupervisorConfig};
 use crate::decision::Decision;
 use crate::error::Result;
-use crate::hook_io;
+use crate::hook_io::{self, HookFormat};
 use crate::sanitize::SanitizePipeline;
 use crate::session::SessionManager;
 use crate::storage::jsonl::JsonlStorage;
@@ -19,7 +19,7 @@ use crate::storage::StorageBackend;
 
 /// Run the `check` subcommand (hook mode).
 /// Reads JSON from stdin, runs the cascade, writes JSON to stdout.
-pub async fn run() -> Result<()> {
+pub async fn run(format: HookFormat) -> Result<()> {
     // 1. Read hook input from stdin
     let input = hook_io::read_hook_input()?;
 
@@ -36,24 +36,28 @@ pub async fn run() -> Result<()> {
     // Check if session is disabled
     if session_mgr.is_disabled(&input.session_id) {
         // Disabled sessions always allow
-        let output = hook_io::HookOutput::new(Decision::Allow);
-        hook_io::write_hook_output(&output)?;
+        hook_io::write_hook_output(Decision::Allow, format)?;
         return Ok(());
     }
 
     // Wait for registration if needed (5s timeout)
     if !session_mgr.is_registered(&input.session_id) {
-        session_mgr
+        if let Err(e) = session_mgr
             .wait_for_registration(&input.session_id, policy.registration_timeout_secs)
-            .await?;
+            .await
+        {
+            // Registration timeout — write deny JSON so callers always get valid output
+            eprintln!("captain-hook: {}", e);
+            hook_io::write_hook_output(Decision::Deny, format)?;
+            std::process::exit(hook_io::deny_exit_code(format));
+        }
     }
 
     let session = session_mgr.get_or_populate(&input.session_id, cwd)?;
 
     // If session has no role, deny (unregistered)
     if session.role.is_none() && !session.disabled {
-        let output = hook_io::HookOutput::new(Decision::Deny);
-        hook_io::write_hook_output(&output)?;
+        hook_io::write_hook_output(Decision::Deny, format)?;
         return Ok(());
     }
 
@@ -150,19 +154,17 @@ pub async fn run() -> Result<()> {
             // On cascade error (e.g. human timeout), default to deny
             // but still write output so callers can parse it.
             eprintln!("captain-hook: cascade error, defaulting to deny ({})", e);
-            let output = hook_io::HookOutput::new(Decision::Deny);
-            hook_io::write_hook_output(&output)?;
-            std::process::exit(1);
+            hook_io::write_hook_output(Decision::Deny, format)?;
+            std::process::exit(hook_io::deny_exit_code(format));
         }
     };
 
     // 6. Output result
-    let output = hook_io::HookOutput::new(record.decision);
-    hook_io::write_hook_output(&output)?;
+    hook_io::write_hook_output(record.decision, format)?;
 
-    // Exit with appropriate code: 0 for allow, 1 for deny
+    // Exit with appropriate code for deny
     if record.decision == Decision::Deny {
-        std::process::exit(1);
+        std::process::exit(hook_io::deny_exit_code(format));
     }
 
     Ok(())

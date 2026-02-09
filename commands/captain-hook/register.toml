@@ -1,0 +1,8 @@
+prompt = """Use the captain_hook_register tool to register this session with the role: {{args}}
+
+If no role was specified, list the available roles and ask the user to choose one.
+
+Available roles:
+- Implementation: coder, tester, integrator, devops
+- Knowledge: researcher, architect, planner, reviewer, security-reviewer, docs
+- Full-access: maintainer, troubleshooter"""

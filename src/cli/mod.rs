@@ -1,11 +1,13 @@
 pub mod build;
 pub mod check;
 pub mod init;
+pub mod mcp_server;
 pub mod monitor;
 pub mod override_cmd;
 pub mod queue;
 pub mod register;
 pub mod scan;
+pub mod self_update;
 pub mod session_check;
 
 use std::path::PathBuf;
@@ -16,8 +18,8 @@ use crate::error::Result;
 /// Dispatch a CLI command.
 pub async fn dispatch(command: crate::Commands) -> Result<()> {
     match command {
-        crate::Commands::Check => check::run().await,
-        crate::Commands::SessionCheck => session_check::run().await,
+        crate::Commands::Check { format } => check::run(format).await,
+        crate::Commands::SessionCheck { format } => session_check::run(format).await,
         crate::Commands::Register {
             session_id,
             role,
@@ -74,6 +76,8 @@ pub async fn dispatch(command: crate::Commands) -> Result<()> {
         crate::Commands::Init => init::run().await,
         crate::Commands::Config => run_config().await,
         crate::Commands::Sync => run_sync().await,
+        crate::Commands::McpServer => mcp_server::run().await,
+        crate::Commands::SelfUpdate { check } => self_update::run(check).await,
     }
 }
 

@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "BeforeAgent": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "name": "session-check",
+            "type": "command",
+            "command": "captain-hook session-check --format gemini",
+            "timeout": 10000,
+            "description": "Check if the session has a registered captain-hook role"
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "name": "permission-check",
+            "type": "command",
+            "command": "captain-hook check --format gemini",
+            "timeout": 30000,
+            "description": "Evaluate tool call against captain-hook permission cascade"
+          }
+        ]
+      }
+    ]
+  }
+}

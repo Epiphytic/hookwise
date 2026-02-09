@@ -3,7 +3,7 @@ use clap::Parser;
 
 #[derive(Parser)]
 #[command(name = "captain-hook")]
-#[command(about = "Intelligent permission gating for Claude Code")]
+#[command(about = "Intelligent permission gating for AI coding assistants")]
 #[command(version)]
 pub struct Cli {
     #[command(subcommand)]

@@ -56,12 +56,20 @@ jobs:
           ARCHIVE_NAME="captain-hook-${TAG_NAME}-plugin-files"
           tar czf "${ARCHIVE_NAME}.tar.gz" \
             hooks/hooks.json \
+            hooks/gemini-hooks.json \
             .claude-plugin/plugin.json \
+            gemini-extension.json \
+            GEMINI.md \
             skills/register/SKILL.md \
             skills/disable/SKILL.md \
             skills/enable/SKILL.md \
             skills/switch/SKILL.md \
             skills/status/SKILL.md \
+            commands/captain-hook/register.toml \
+            commands/captain-hook/disable.toml \
+            commands/captain-hook/enable.toml \
+            commands/captain-hook/switch.toml \
+            commands/captain-hook/status.toml \
             agents/supervisor.md
 
           sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
@@ -169,6 +177,8 @@ jobs:
           echo "$HELP_OUTPUT"
           echo "$HELP_OUTPUT" | grep -q "check" || { echo "FAIL: --help missing 'check' subcommand"; exit 1; }
           echo "$HELP_OUTPUT" | grep -q "register" || { echo "FAIL: --help missing 'register' subcommand"; exit 1; }
+          echo "$HELP_OUTPUT" | grep -q "mcp-server" || { echo "FAIL: --help missing 'mcp-server' subcommand"; exit 1; }
+          echo "$HELP_OUTPUT" | grep -q "self-update" || { echo "FAIL: --help missing 'self-update' subcommand"; exit 1; }
           echo "Help check passed"
 
       - name: Smoke test captain-hook check
@@ -177,6 +187,9 @@ jobs:
           cd /tmp
           captain-hook init
           captain-hook register --session-id smoke-test --role maintainer
+
+          # Reduce human timeout for CI (default 60s is too slow for smoke tests)
+          sed -i 's/human_timeout_secs: 60/human_timeout_secs: 3/' .captain-hook/policy.yml
 
           # Run a check — maintainer role with a Bash command should produce valid JSON
           OUTPUT=$(echo '{"session_id":"smoke-test","tool_name":"Bash","tool_input":{"command":"ls"},"cwd":"/tmp"}' | captain-hook check 2>/dev/null || true)
@@ -192,7 +205,22 @@ jobs:
           assert decision in ('allow', 'deny', 'ask'), f'unexpected decision: {decision}'
           print(f'Valid response: permissionDecision={decision}')
           "
-          echo "Smoke test passed"
+          echo "Claude format smoke test passed"
+
+          # Test Gemini format output
+          GEMINI_OUTPUT=$(echo '{"session_id":"smoke-test","tool_name":"write_file","tool_input":{"file_path":"test.txt","content":"hello"},"cwd":"/tmp","hook_event_name":"BeforeTool","timestamp":"2026-02-09T00:00:00Z"}' | captain-hook check --format gemini 2>/dev/null || true)
+          echo "Gemini output: $GEMINI_OUTPUT"
+
+          echo "$GEMINI_OUTPUT" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          assert 'decision' in data, 'missing decision field'
+          decision = data['decision']
+          assert decision in ('allow', 'deny', 'ask'), f'unexpected decision: {decision}'
+          assert 'hookSpecificOutput' not in data, 'Gemini format should not have hookSpecificOutput'
+          print(f'Valid Gemini response: decision={decision}')
+          "
+          echo "Gemini format smoke test passed"
 
           # Clean up
           rm -rf /tmp/.captain-hook

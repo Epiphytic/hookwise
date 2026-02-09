@@ -1,5 +1,5 @@
 {
   "name": "captain-hook",
-  "version": "0.1.1",
-  "description": "Intelligent permission gating for Claude Code"
+  "version": "0.2.0",
+  "description": "Intelligent permission gating for AI coding assistants"
 }

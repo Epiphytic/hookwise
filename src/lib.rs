@@ -16,16 +16,24 @@ pub use cascade::CascadeRunner;
 pub use config::{CompiledPathPolicy, PolicyConfig, RoleDefinition};
 pub use decision::{CacheKey, Decision, DecisionMetadata, DecisionRecord, DecisionTier};
 pub use error::{CaptainHookError, Result};
-pub use hook_io::{HookInput, HookOutput};
+pub use hook_io::{HookFormat, HookInput, HookOutput};
 pub use session::{SessionContext, SessionManager};
 
 #[derive(Subcommand)]
 pub enum Commands {
     /// Evaluate a tool call (hook mode). Reads JSON from stdin, writes JSON to stdout.
-    Check,
+    Check {
+        /// Output format: claude (default) or gemini
+        #[arg(long, default_value = "claude")]
+        format: HookFormat,
+    },
 
-    /// Check if session is registered (user_prompt_submit hook).
-    SessionCheck,
+    /// Check if session is registered (user_prompt_submit / BeforeAgent hook).
+    SessionCheck {
+        /// Output format: claude (default) or gemini
+        #[arg(long, default_value = "claude")]
+        format: HookFormat,
+    },
 
     /// Register a session with a role.
     Register {
@@ -130,4 +138,14 @@ pub enum Commands {
 
     /// Pull latest org-level rules.
     Sync,
+
+    /// Start MCP server over stdio (for Gemini CLI extension).
+    McpServer,
+
+    /// Check for and install binary updates from GitHub releases.
+    SelfUpdate {
+        /// Only check for updates, don't install.
+        #[arg(long)]
+        check: bool,
+    },
 }

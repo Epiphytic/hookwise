@@ -1,6 +1,6 @@
 # captain-hook
 
-Intelligent permission gating for Claude Code. A Rust binary + Claude Code plugin that provides learned permission decisions across multi-session and multi-agent environments.
+Intelligent permission gating for AI coding assistants. A Rust binary that works as both a Claude Code plugin and Gemini CLI extension, providing learned permission decisions across multi-session and multi-agent environments.
 
 ## Architecture
 

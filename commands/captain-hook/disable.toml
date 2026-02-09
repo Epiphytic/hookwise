@@ -1,0 +1,1 @@
+prompt = """Use the captain_hook_disable tool to disable captain-hook permission gating for the current session. All tool calls will be permitted without evaluation."""
