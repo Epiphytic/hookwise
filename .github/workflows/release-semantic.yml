@@ -64,26 +64,26 @@ jobs:
 
       - name: Exchange for GitHub token via STS
         id: sts
-        run: |
-          HTTP_CODE=$(curl -sS -o /tmp/sts-response.json -w "%{http_code}" \
-            -X POST "https://sts.epiphytic.org/exchange" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "token": "'"${OIDC_TOKEN}"'",
-              "identity": "hookwise-release"
-            }')
-          echo "STS HTTP status: ${HTTP_CODE}"
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "STS exchange failed with HTTP ${HTTP_CODE}:"
-            cat /tmp/sts-response.json
-            exit 1
-          fi
-          GH_TOKEN=$(jq -r '.access_token' /tmp/sts-response.json)
-          rm -f /tmp/sts-response.json
-          echo "::add-mask::${GH_TOKEN}"
-          echo "gh_token=${GH_TOKEN}" >> "$GITHUB_OUTPUT"
         env:
           OIDC_TOKEN: ${{ steps.oidc.outputs.oidc_token }}
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${OIDC_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://sts.epiphytic.org/sts/exchange?scope=Epiphytic/.github&identity=hookwise-release")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "STS exchange failed with HTTP ${HTTP_CODE}: ${BODY}"
+            exit 1
+          fi
+
+          GH_TOKEN=$(echo "$BODY" | jq -r '.access_token')
+          echo "::add-mask::${GH_TOKEN}"
+          echo "gh_token=${GH_TOKEN}" >> "$GITHUB_OUTPUT"
 
       - name: Update marketplace version
         env:
