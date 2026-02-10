@@ -1,0 +1,28 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "captain-hook-dev",
+  "description": "Captain-hook development marketplace — install from local repo",
+  "owner": {
+    "name": "Epiphytic",
+    "email": "captain-hook@epiphytic.dev"
+  },
+  "metadata": {
+    "description": "Captain-hook development marketplace for local testing and installation"
+  },
+  "plugins": [
+    {
+      "name": "captain-hook",
+      "description": "Intelligent permission gating for AI coding assistants",
+      "version": "0.2.0",
+      "source": "./",
+      "repository": "https://github.com/Epiphytic/captain-hook",
+      "keywords": [
+        "security",
+        "permissions",
+        "hooks",
+        "roles"
+      ],
+      "category": "security"
+    }
+  ]
+}
