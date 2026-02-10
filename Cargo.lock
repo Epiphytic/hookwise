@@ -1157,7 +1157,7 @@ checksum = "d0f0ae375a85536cac3a243e3a9cda80a47910348abdea7e2c22f8ec556d586d"
 
 [[package]]
 name = "hookwise"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "aho-corasick",
  "anyhow",
