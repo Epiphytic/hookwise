@@ -1,6 +1,6 @@
 {
   "name": "hookwise",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Intelligent permission gating for AI coding assistants",
   "mcpServers": {
     "hookwise": {
