@@ -32,6 +32,9 @@ Thumbs.db
 .fork-join/
 
 
+# Node (semantic-release tooling)
+node_modules/
+
 # Added by cargo
 
 /target

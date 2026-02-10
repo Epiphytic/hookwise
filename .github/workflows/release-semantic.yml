@@ -1,0 +1,109 @@
+name: Semantic Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  semantic-release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    outputs:
+      new_release_published: ${{ steps.release.outputs.new_release_published }}
+      new_release_version: ${{ steps.release.outputs.new_release_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Make update-version.sh executable
+        run: chmod +x scripts/update-version.sh
+
+      - name: Run semantic-release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+  update-marketplace:
+    name: Update plugin-marketplace
+    needs: semantic-release
+    if: needs.semantic-release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Get OIDC token
+        id: oidc
+        run: |
+          OIDC_TOKEN=$(curl -sS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.epiphytic.org" | jq -r '.value')
+          echo "::add-mask::${OIDC_TOKEN}"
+          echo "oidc_token=${OIDC_TOKEN}" >> "$GITHUB_OUTPUT"
+
+      - name: Exchange for GitHub token via STS
+        id: sts
+        run: |
+          RESPONSE=$(curl -sS -X POST "https://sts.epiphytic.org/exchange" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "token": "'"${OIDC_TOKEN}"'",
+              "identity": "captain-hook-release"
+            }')
+          GH_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
+          echo "::add-mask::${GH_TOKEN}"
+          echo "gh_token=${GH_TOKEN}" >> "$GITHUB_OUTPUT"
+        env:
+          OIDC_TOKEN: ${{ steps.oidc.outputs.oidc_token }}
+
+      - name: Update marketplace version
+        env:
+          GH_TOKEN: ${{ steps.sts.outputs.gh_token }}
+          NEW_VERSION: ${{ needs.semantic-release.outputs.new_release_version }}
+        run: |
+          # Fetch current marketplace.json from plugin-marketplace
+          RESPONSE=$(curl -sS -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/Epiphytic/plugin-marketplace/contents/marketplace.json")
+
+          CURRENT_SHA=$(echo "$RESPONSE" | jq -r '.sha')
+          CONTENT=$(echo "$RESPONSE" | jq -r '.content' | base64 -d)
+
+          # Update captain-hook version using jq
+          UPDATED=$(echo "$CONTENT" | jq --arg v "$NEW_VERSION" '
+            .plugins |= map(
+              if .name == "captain-hook" then .version = $v else . end
+            )
+          ')
+
+          # Encode and push
+          ENCODED=$(echo "$UPDATED" | base64 -w 0)
+
+          curl -sS -X PUT \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/Epiphytic/plugin-marketplace/contents/marketplace.json" \
+            -d '{
+              "message": "chore: update captain-hook to v'"${NEW_VERSION}"'",
+              "content": "'"${ENCODED}"'",
+              "sha": "'"${CURRENT_SHA}"'"
+            }'
+
+          echo "Updated plugin-marketplace to captain-hook v${NEW_VERSION}"
