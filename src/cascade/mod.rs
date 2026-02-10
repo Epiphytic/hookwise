@@ -53,6 +53,8 @@ pub struct CascadeRunner {
     pub human: Box<dyn CascadeTier>,
     pub storage: Box<dyn crate::storage::StorageBackend>,
     pub policy: crate::config::PolicyConfig,
+    /// Normalizes file paths to `category:relative` form for portable storage.
+    pub normalizer: Option<crate::config::roles::PathNormalizer>,
 }
 
 impl CascadeRunner {
@@ -113,6 +115,9 @@ impl CascadeRunner {
                     );
                 }
 
+                // Normalize file_path to category:relative form for portable storage
+                self.normalize_record(&mut record);
+
                 // Persist decisions from tiers that produce new decisions
                 match record.metadata.tier {
                     DecisionTier::ExactCache => {
@@ -141,7 +146,7 @@ impl CascadeRunner {
             .map(|r| r.name.clone())
             .unwrap_or_else(|| "*".to_string());
 
-        let record = DecisionRecord {
+        let mut record = DecisionRecord {
             key: CacheKey {
                 sanitized_input: input.sanitized_input,
                 tool: tool_name.to_string(),
@@ -161,6 +166,7 @@ impl CascadeRunner {
             session_id: format!("{}/{}/{}", session.org, session.project, session.user),
         };
 
+        self.normalize_record(&mut record);
         self.persist_decision(&record).await?;
         Ok(record)
     }
@@ -190,9 +196,16 @@ impl CascadeRunner {
         }
     }
 
+    /// Normalize a decision record's file_path using the category normalizer.
+    fn normalize_record(&self, record: &mut DecisionRecord) {
+        if let (Some(normalizer), Some(ref path)) = (&self.normalizer, &record.file_path) {
+            record.file_path = Some(normalizer.normalize(path));
+        }
+    }
+
     /// Persist a decision to storage and update in-memory caches.
     async fn persist_decision(&self, record: &DecisionRecord) -> Result<()> {
-        // 1. Save to JSONL storage
+        // 1. Save to JSONL storage (file_path already normalized by caller)
         self.storage.save_decision(record)?;
 
         // 2. Update exact cache

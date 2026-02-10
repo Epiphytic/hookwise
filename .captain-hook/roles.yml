@@ -5,7 +5,20 @@
 # - A natural language description (used by the LLM supervisor at Tier 3)
 # - Deterministic path policies (enforced by globset at Tier 0)
 #
-# Projects can add custom roles or override built-in ones in this file.
+# Categories define semantic path groups. Override them to match your project:
+#   categories:
+#     source:
+#       - "app/**"
+#       - "services/**"
+#
+# Use {{category_name}} in role path lists to reference categories.
+# Plain globs can be mixed alongside macros.
+
+# Override built-in defaults here (optional). Omit to use defaults.
+# categories:
+#   source:
+#     - "src/**"
+#     - "lib/**"
 
 roles:
 
@@ -21,27 +34,13 @@ roles:
       test files -- that's the tester's job.
     paths:
       allow_write:
-        - "src/**"
-        - "lib/**"
-        - "Cargo.toml"
-        - "Cargo.lock"
-        - "package.json"
-        - "package-lock.json"
-        - "go.mod"
-        - "go.sum"
-        - "pyproject.toml"
-        - "requirements*.txt"
+        - "{{source}}"
+        - "{{config_files}}"
       deny_write:
-        - "tests/**"
-        - "test-fixtures/**"
-        - "*.test.*"
-        - "*.spec.*"
-        - "*_test.go"
-        - "docs/**"
-        - ".github/**"
-        - ".gitlab-ci.yml"
-        - "*.tf"
-        - "*.tfvars"
+        - "{{tests}}"
+        - "{{docs}}"
+        - "{{ci}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 
@@ -54,25 +53,13 @@ roles:
       Docker if docker-compose.test.yml exists.
     paths:
       allow_write:
-        - "tests/**"
-        - "test-fixtures/**"
-        - "*.test.*"
-        - "*.spec.*"
-        - "*_test.go"
-        - "test_*.py"
-        - "**/test_*.py"
-        - "**/*_test.go"
-        - "jest.config.*"
-        - "pytest.ini"
-        - "vitest.config.*"
-        - ".coveragerc"
-        - "codecov.yml"
+        - "{{tests}}"
+        - "{{test_config}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "docs/**"
-        - ".github/**"
-        - "*.tf"
+        - "{{source}}"
+        - "{{docs}}"
+        - "{{ci}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 
@@ -86,23 +73,12 @@ roles:
       without explicit human approval.
     paths:
       allow_write:
-        - "*.tf"
-        - "*.tfvars"
-        - "*.hcl"
-        - "terraform/**"
-        - "infra/**"
-        - "pulumi/**"
-        - "cdk/**"
-        - "cloudformation/**"
-        - "ansible/**"
-        - "helm/**"
-        - ".terraform.lock.hcl"
+        - "{{infra}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "tests/**"
-        - "docs/**"
-        - ".github/**"
+        - "{{source}}"
+        - "{{tests}}"
+        - "{{docs}}"
+        - "{{ci}}"
       allow_read:
         - "**"
 
@@ -115,35 +91,13 @@ roles:
       triggers a production deployment without explicit human approval.
     paths:
       allow_write:
-        - ".github/**"
-        - ".gitlab-ci.yml"
-        - ".circleci/**"
-        - "Jenkinsfile"
-        - ".buildkite/**"
-        - "Dockerfile*"
-        - "docker-compose*"
-        - ".dockerignore"
-        - "Makefile"
-        - ".eslintrc*"
-        - ".prettierrc*"
-        - ".editorconfig"
-        - "tsconfig*"
-        - ".*rc"
-        - ".*rc.*"
-        - ".tool-versions"
-        - ".nvmrc"
-        - ".python-version"
-        - ".ruby-version"
-        - "rust-toolchain.toml"
-        - "lefthook.yml"
-        - ".husky/**"
-        - ".pre-commit-config.yaml"
+        - "{{ci}}"
+        - "{{devops}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "tests/**"
-        - "docs/**"
-        - "*.tf"
+        - "{{source}}"
+        - "{{tests}}"
+        - "{{docs}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 
@@ -161,13 +115,12 @@ roles:
       (file:line for code, URL for external).
     paths:
       allow_write:
-        - "docs/research/**"
+        - "{{research_output}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "tests/**"
-        - ".github/**"
-        - "*.tf"
+        - "{{source}}"
+        - "{{tests}}"
+        - "{{ci}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 
@@ -181,14 +134,12 @@ roles:
       solutions that are easy to express in code.
     paths:
       allow_write:
-        - "docs/architecture/**"
-        - "docs/adr/**"
+        - "{{architecture_output}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "tests/**"
-        - ".github/**"
-        - "*.tf"
+        - "{{source}}"
+        - "{{tests}}"
+        - "{{ci}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 
@@ -202,13 +153,12 @@ roles:
       by a stranger with zero context.
     paths:
       allow_write:
-        - "docs/plans/**"
+        - "{{plans_output}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "tests/**"
-        - ".github/**"
-        - "*.tf"
+        - "{{source}}"
+        - "{{tests}}"
+        - "{{ci}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 
@@ -222,14 +172,13 @@ roles:
       Only reports issues with confidence >= 75/100 to prevent noise.
     paths:
       allow_write:
-        - "docs/reviews/**"
+        - "{{reviews_output}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "tests/**"
-        - ".github/**"
-        - "*.tf"
-        - "docs/reviews/security/**"
+        - "{{source}}"
+        - "{{tests}}"
+        - "{{ci}}"
+        - "{{infra}}"
+        - "{{security_reviews_output}}"
       allow_read:
         - "**"
 
@@ -244,13 +193,12 @@ roles:
       CRITICAL/HIGH/MEDIUM/LOW with attack vectors and remediations.
     paths:
       allow_write:
-        - "docs/reviews/security/**"
+        - "{{security_reviews_output}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "tests/**"
-        - ".github/**"
-        - "*.tf"
+        - "{{source}}"
+        - "{{tests}}"
+        - "{{ci}}"
+        - "{{infra}}"
         - "docs/reviews/*.md"
       allow_read:
         - "**"
@@ -266,17 +214,12 @@ roles:
       is worse than no documentation.
     paths:
       allow_write:
-        - "docs/**"
-        - "*.md"
-        - "*.aisp"
-        - "CHANGELOG.md"
-        - "LICENSE"
+        - "{{docs_output}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "tests/**"
-        - ".github/**"
-        - "*.tf"
+        - "{{source}}"
+        - "{{tests}}"
+        - "{{ci}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 

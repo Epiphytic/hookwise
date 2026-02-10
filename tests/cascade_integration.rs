@@ -170,6 +170,7 @@ fn make_runner(
         human,
         storage: Box::new(storage),
         policy: PolicyConfig::default(),
+        normalizer: None,
     }
 }
 

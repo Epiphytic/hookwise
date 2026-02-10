@@ -28,6 +28,8 @@ pub async fn run(format: HookFormat) -> Result<()> {
 
     // 2. Load config
     let policy = PolicyConfig::load_project(&cwd_path)?;
+    let roles = crate::config::RolesConfig::load_project(&cwd_path)?;
+    let normalizer = roles.normalizer().ok();
     let team_id = std::env::var("CLAUDE_TEAM_ID").ok();
 
     // 3. Get session context
@@ -142,6 +144,7 @@ pub async fn run(format: HookFormat) -> Result<()> {
         human: Box::new(human),
         storage: Box::new(storage),
         policy: policy.clone(),
+        normalizer,
     };
 
     // 5. Run cascade

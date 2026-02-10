@@ -57,6 +57,20 @@ supervisor:
     // Write default roles.yml
     let roles_content = r#"# captain-hook role definitions
 # Each role has path policies and a description for the LLM supervisor.
+#
+# Categories define semantic path groups. Override them to match your project:
+#   categories:
+#     source:
+#       - "app/**"
+#       - "services/**"
+#
+# Use {{category_name}} in role path lists to reference categories.
+
+# Override built-in defaults here (optional). Omit to use defaults.
+# categories:
+#   source:
+#     - "src/**"
+#     - "lib/**"
 
 roles:
   coder:
@@ -64,16 +78,13 @@ roles:
     description: "Implementation role: writes source code and project config"
     paths:
       allow_write:
-        - "src/**"
-        - "lib/**"
-        - "Cargo.toml"
-        - "package.json"
-        - "tsconfig.json"
+        - "{{source}}"
+        - "{{config_files}}"
       deny_write:
-        - "tests/**"
-        - "docs/**"
-        - ".github/**"
-        - "*.tf"
+        - "{{tests}}"
+        - "{{docs}}"
+        - "{{ci}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 
@@ -82,15 +93,13 @@ roles:
     description: "Testing role: writes tests and test fixtures"
     paths:
       allow_write:
-        - "tests/**"
-        - "test-fixtures/**"
-        - "*.test.*"
-        - "*_test.go"
+        - "{{tests}}"
+        - "{{test_config}}"
       deny_write:
-        - "src/**"
-        - "lib/**"
-        - "docs/**"
-        - ".github/**"
+        - "{{source}}"
+        - "{{docs}}"
+        - "{{ci}}"
+        - "{{infra}}"
       allow_read:
         - "**"
 
