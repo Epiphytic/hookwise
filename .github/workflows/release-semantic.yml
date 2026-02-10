@@ -36,10 +36,14 @@ jobs:
       - name: Make update-version.sh executable
         run: chmod +x scripts/update-version.sh
 
+      - name: Install semantic-release plugins
+        run: npm install --no-save semantic-release @semantic-release/exec @semantic-release/git @semantic-release/github
+
       - name: Run semantic-release
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: npx semantic-release
 
   update-marketplace:
